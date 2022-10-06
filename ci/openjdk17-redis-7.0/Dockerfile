@@ -1,5 +1,6 @@
 ARG BASE
 FROM ${BASE}
+
 # Any ARG statements before FROM are cleared.
 ARG REDIS
 
