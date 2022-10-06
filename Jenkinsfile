@@ -40,6 +40,27 @@ pipeline {
 						}
 					}
 				}
+
+				stage('Publish JDK 17 + Redis 7.0 Docker image') {
+                	when {
+                		anyOf {
+                			changeset "ci/openjdk17-redis-7.0/Dockerfile"
+                			changeset "Makefile"
+                			changeset "ci/pipeline.properties"
+                		}
+                	}
+                	agent { label 'data' }
+                	options { timeout(time: 20, unit: 'MINUTES') }
+
+                	steps {
+                		script {
+                			def image = docker.build("springci/spring-data-with-redis-7.0:${p['java.main.tag']}", "--build-arg BASE=${p['docker.java.main.image']} --build-arg REDIS=${p['docker.redis.7.version']} -f ci/openjdk17-redis-7.0/Dockerfile .")
+                			docker.withRegistry(p['docker.registry'], p['docker.credentials']) {
+                				image.push()
+                			}
+                		}
+                	}
+                }
 			}
 		}
 
@@ -60,7 +81,7 @@ pipeline {
 			}
 			steps {
 				script {
-					docker.image("harbor-repo.vmware.com/dockerhub-proxy-cache/springci/spring-data-with-redis-6.2:${p['java.main.tag']}").inside('-v $HOME:/tmp/jenkins-home') {
+					docker.image("harbor-repo.vmware.com/dockerhub-proxy-cache/springci/spring-data-with-redis-7.0:${p['java.main.tag']}").inside('-v $HOME:/tmp/jenkins-home') {
 						sh 'PROFILE=none LONG_TESTS=true ci/test.sh'
 					}
 				}
@@ -84,7 +105,7 @@ pipeline {
         	}
         	steps {
         		script {
-        			docker.image("harbor-repo.vmware.com/dockerhub-proxy-cache/springci/spring-data-with-redis-6.2:${p['java.main.tag']}").inside('-v $HOME:/tmp/jenkins-home') {
+        			docker.image("harbor-repo.vmware.com/dockerhub-proxy-cache/springci/spring-data-with-redis-7.0:${p['java.main.tag']}").inside('-v $HOME:/tmp/jenkins-home') {
         				sh 'PROFILE=runtimehints LONG_TESTS=false ci/test.sh'
         			}
         		}
